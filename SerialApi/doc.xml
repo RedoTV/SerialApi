@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SerialApi</name>
+    </assembly>
+    <members>
+        <member name="M:SerialApi.Controllers.SerialController.GetSerials">
+            <summary>
+            Получить все сериалы
+            </summary>
+        </member>
+        <member name="M:SerialApi.Controllers.SerialController.AddSerial(System.String,System.String,System.String,Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            Добавить сериал
+            </summary>
+            <param name="name">название сериала</param>
+            <param name="shikiId">Id аниме на шикимори</param>
+            <param name="description">описание сериала</param>
+            <param name="poster">постер сериала</param>
+        </member>
+        <member name="M:SerialApi.Controllers.SerialController.ChangeSerial(System.Int32,System.String,System.String,Microsoft.AspNetCore.Http.IFormFile)">
+            <summary>
+            Изменить информацию о сериале
+            </summary>
+            <param name="id">id</param>
+            <param name="name">название сериала</param>
+            <param name="description">описание сериала</param>
+            <param name="poster">постер к сериалу</param>
+            <returns></returns>
+        </member>
+        <member name="M:SerialApi.Controllers.SerialController.DeleteSerial(System.Int32)">
+            <summary>
+            удалить сериал по id
+            </summary>
+            <param name="id">id</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
