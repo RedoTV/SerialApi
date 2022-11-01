@@ -4,11 +4,15 @@ using Newtonsoft.Json.Linq;
 using SerialApi.DatabaseContext;
 using SerialApi.Models;
 using System.Net;
+using SerialApi.Services;
+using Microsoft.AspNetCore.Authorization;
+using SerialApi.FormModels;
 
 namespace SerialApi.Controllers
 {
+    
     [ApiController]
-    [Route("api/serial")]
+    [Route("title")]
     public class SerialController : ControllerBase
     {
         SerialContext SerialDbContext;
@@ -22,105 +26,52 @@ namespace SerialApi.Controllers
         /// <summary>
         /// Получить все сериалы
         /// </summary>
-        [HttpGet("getall")]
-        public IEnumerable<Serial> GetSerials()
+        
+        [HttpGet("search/{id?}")]
+        public IActionResult GetSerials(int? id)
         {
-            List<Serial> serials = SerialDbContext.Serials.ToList();
-            return serials;
+            if(id == null)
+            {
+                List<Serial> serials = SerialDbContext.Serials.ToList();
+                return Ok(serials);
+            }
+            else
+            {
+                Serial serial = SerialDbContext.Serials.Find(id)!;
+                if (serial == null) return NotFound();
+                else
+                {
+                    return Ok(serial);
+                }
+            }
         }
 
         /// <summary>
         /// Добавить сериал
         /// </summary>
-        /// <param name="name">название сериала</param>
-        /// <param name="shikiId">Id аниме на шикимори</param>
-        /// <param name="description">описание сериала</param>
-        /// <param name="poster">постер сериала</param>
-        [HttpPost("addserial")]
-        public async Task AddSerial(string name, string shikiId, string? description, IFormFile? poster)
+        /// <param name="formInfo">Информация о тайтле</param>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("addtitle")]
+        public async Task<IResult> AddSerial([FromForm]AddSerialForm formInfo)
         {
-            string pathToWebRoot = WebHostEnvironment.WebRootPath;
-            JObject jsonResp = new JObject();
-            if (description == null || poster == null)
-            {
-                
-                HttpClient client = new HttpClient();
-                HttpResponseMessage response = await client.GetAsync($"https://shikimori.one/api/animes/{shikiId}");
-                response.EnsureSuccessStatusCode();
-                string responseBody = await response.Content.ReadAsStringAsync();
-                jsonResp = JObject.Parse(responseBody);
-            }
-            if (poster == null && description == null)
-            {
-                description = jsonResp["description"]!.ToString();
-                string image = jsonResp["image"]!["original"]!.ToString();
-                using (var webClient = new WebClient())
-                {
-                    webClient.DownloadFile($"https://shikimori.one{image}", Path.Combine(pathToWebRoot,"poster_img",$"{name}.jpg"));
-                }
-            }
-            else if (poster == null)
-            {
-                description = jsonResp["description"]!.ToString();
-                string image = jsonResp["image"]!["original"]!.ToString();
-                using (var webClient = new WebClient())
-                {
-                    webClient.DownloadFile($"https://shikimori.one{image}", Path.Combine(pathToWebRoot, "poster_img", $"{name}.jpg"));
-                }
-            }
-            else if (description == null)
-            {
-                description = jsonResp["description"]!.ToString();
-            }
-            else
-            {
-                string fullPath = Path.Combine(pathToWebRoot, "poster_img", name + ".png");
-                using (FileStream imgStream = new FileStream(fullPath, FileMode.Create))
-                {
-                    await poster!.CopyToAsync(imgStream);
-                }
-            }
-            string imgInRoot = String.Format("poster_img" + "/" + name + ".png");
-
-            Serial serial = new Serial(name, description!, imgInRoot, shikiId);
-            SerialDbContext.Add(serial);
-            SerialDbContext?.SaveChangesAsync();
+            SerialService serialService = new SerialService();
+            await serialService.AddSerialTask(WebHostEnvironment , SerialDbContext , formInfo);
+            return Results.Ok();
         }
 
         /// <summary>
         /// Изменить информацию о сериале
         /// </summary>
-        /// <param name="id">id</param>
-        /// <param name="name">название сериала</param>
-        /// <param name="description">описание сериала</param>
-        /// <param name="poster">постер к сериалу</param>
-        /// <returns></returns>
-        [HttpPut("changeserial")]
-        public async Task<IResult> ChangeSerial(int id, string? name, string? description, IFormFile? poster)
+        [Authorize(Roles = "Admin")]
+        [HttpPut("changetitle")]
+        public async Task<IResult> ChangeSerial([FromForm]ChangeSerialForm serialInfo)
         {
             IResult result = Results.NotFound();
-            if (SerialDbContext.Serials.Find(id) != null)
+            SerialService serialService = new SerialService();
+            if (serialInfo.Id != 0)
             {
-                if (name != null || description != null || poster != null)
-                {
-                    Serial serial = SerialDbContext.Serials.Find(id)!;
-                    if (name != null) serial.Name = name;
-                    if (description != null) serial.Description = description;
-                    if (poster != null && name == null)
-                    {
-                        string fileName = name == null ? fileName = serial.Name : fileName = name;
-                        string pathToWebRoot = WebHostEnvironment.WebRootPath;
-                        string fullPath = Path.Combine(pathToWebRoot, "poster_img", fileName + ".png");
-                        using (FileStream imgStream = new FileStream(fullPath, FileMode.Create))
-                        {
-                            await poster!.CopyToAsync(imgStream);
-                        }
-                        string imgInRoot = String.Format("poster_img" + "/" + fileName + ".png");
-                        serial.PathToPoster = imgInRoot;
-                    }
-                    await SerialDbContext.SaveChangesAsync();
-                    result = Results.Accepted();
-                }
+                await serialService.ChangeSerialTask(WebHostEnvironment, SerialDbContext, serialInfo);
+                result = Results.Ok();
             }
             return result;
         }
@@ -130,14 +81,28 @@ namespace SerialApi.Controllers
         /// </summary>
         /// <param name="id">id</param>
         /// <returns></returns>
-        [HttpDelete("deleteserial")]
-        public async Task<IResult> DeleteSerial(int id)
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("deletetitle/{id?}")]
+        public async Task<IResult> DeleteSerial(int? id)
         {
-            if(SerialDbContext.Serials.Find(id) != null)
+            if(id != null)
             {
-                SerialDbContext.Serials.Remove(SerialDbContext.Serials.Find(id)!);
-                await SerialDbContext.SaveChangesAsync();
-                return Results.Accepted();
+                Serial serial = SerialDbContext.Serials.Find(id)!;
+                if (serial != null)
+                {
+                    string pathToPrieview = Path.Combine(WebHostEnvironment.WebRootPath, "posters", serial.Name + ".png");
+                    if (System.IO.File.Exists(pathToPrieview))
+                    {
+                        System.IO.File.Delete(pathToPrieview);
+                    }
+                    SerialDbContext.Serials.Remove(serial);
+                    await SerialDbContext.SaveChangesAsync();
+                    return Results.Ok();
+                }
+                else
+                {
+                    return Results.NotFound();
+                }
             }
             else
             {
