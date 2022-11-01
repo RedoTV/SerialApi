@@ -4,31 +4,23 @@
         <name>SerialApi</name>
     </assembly>
     <members>
-        <member name="M:SerialApi.Controllers.SerialController.GetSerials">
+        <member name="M:SerialApi.Controllers.SerialController.GetSerials(System.Nullable{System.Int32})">
             <summary>
             Получить все сериалы
             </summary>
         </member>
-        <member name="M:SerialApi.Controllers.SerialController.AddSerial(System.String,System.String,System.String,Microsoft.AspNetCore.Http.IFormFile)">
+        <member name="M:SerialApi.Controllers.SerialController.AddSerial(SerialApi.FormModels.AddSerialForm)">
             <summary>
             Добавить сериал
             </summary>
-            <param name="name">название сериала</param>
-            <param name="shikiId">Id аниме на шикимори</param>
-            <param name="description">описание сериала</param>
-            <param name="poster">постер сериала</param>
+            <param name="formInfo">Информация о тайтле</param>
         </member>
-        <member name="M:SerialApi.Controllers.SerialController.ChangeSerial(System.Int32,System.String,System.String,Microsoft.AspNetCore.Http.IFormFile)">
+        <member name="M:SerialApi.Controllers.SerialController.ChangeSerial(SerialApi.FormModels.ChangeSerialForm)">
             <summary>
             Изменить информацию о сериале
             </summary>
-            <param name="id">id</param>
-            <param name="name">название сериала</param>
-            <param name="description">описание сериала</param>
-            <param name="poster">постер к сериалу</param>
-            <returns></returns>
         </member>
-        <member name="M:SerialApi.Controllers.SerialController.DeleteSerial(System.Int32)">
+        <member name="M:SerialApi.Controllers.SerialController.DeleteSerial(System.Nullable{System.Int32})">
             <summary>
             удалить сериал по id
             </summary>
